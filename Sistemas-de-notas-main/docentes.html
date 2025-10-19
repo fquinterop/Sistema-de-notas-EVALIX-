@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Panel Docentes  Evalix</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
+</head>
+<body class="bg-light">
+
+ <nav class="navbar navbar-dark" style="background-color: #2196f3;">
+    <div class="container-fluid">
+      <a class="navbar-brand d-flex align-items-center" href="index.html">
+        <img src="assets/imagenes/evalix.png" alt="Evalix" width="40" height="40" class="me-2"/>
+        Panel Docentes
+      </a>
+      <div class="text-end">
+        <span id="userEmail" class="text-white-50 me-3"></span>
+        <button class="btn btn-outline-light btn-sm" id="logoutBtn">Cerrar sesión "</button>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container py-4">
+    <div class="d-flex flex-wrap gap-2 align-items-end mb-3">
+      <div>
+        <label class="form-label">Año lectivo</label>
+        <input type="number" id="anio" class="form-control" value="2025" min="2000" max="2100">
+      </div>
+      <div>
+        <label class="form-label">Período</label>
+        <select id="periodo" class="form-select">
+          <option value="1">Período 1</option>
+          <option value="2">Período 2</option>
+          <option value="3">Período 3</option>
+          <option value="4">Período 4</option>
+        </select>
+      </div>
+      <div class="ms-auto">
+        <button class="btn btn-primary" id="addRowBtn">Agregar estudiante</button>
+        <button class="btn btn-success" id="saveBtn">Guardar</button>
+        <button class="btn btn-secondary" id="exportBtn">Exportar CSV</button>
+        <button class="btn btn-outline-danger" id="clearBtn">Limpiar todo</button>
+      </div>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table table-striped align-middle" id="gradesTable">
+        <thead class="table-dark">
+          <tr>
+            <th>#</th>
+            <th>Identificación</th>
+            <th>Estudiante</th>
+            <th>Asignatura</th>
+            <th>Nota 1</th>
+            <th>Nota 2</th>
+            <th>Nota 3</th>
+            <th>Nota 4</th>
+            <th>Promedio</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="gradesTbody">
+          <!-- Filas dinámicas -->
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <script>
+    // ---- Utilidades ----
+    function toNumber(v) {
+      const n = parseFloat(String(v).replace(',', '.'));
+      return isNaN(n) ? 0 : n;
+    }
+    function clampNota(n) {
+      // ajusta a rango 0-5 (cambia si tu escala es 0-10)
+      n = toNumber(n);
+      if (n < 0) n = 0;
+      if (n > 5) n = 5;
+      return n;
+    }
+
+    // ---- Estado ----
+    const STORAGE_KEY = 'evalix_grades';
+    let state = {
+      anio: 2025,
+      periodo: 1,
+      rows: [] // {idEst, nombre, asignatura, n1..n4, prom}
+    };
+
+    // ---- DOM ----
+    const tbody = document.getElementById('gradesTbody');
+    const anioInput = document.getElementById('anio');
+    const periodoSel = document.getElementById('periodo');
+    const userEmailSpan = document.getElementById('userEmail');
+
+    // ---- Sesión fake ----
+    (function checkSession(){
+      const u = localStorage.getItem('evalix_user');
+      if (!u) {
+        window.location.href = 'login.html';
+        return;
+      }
+      const user = JSON.parse(u);
+      userEmailSpan.textContent = user.email || '';
+      if (user.role !== 'profesor') {
+        // Solo docentes aquí
+        window.location.href = 'login.html';
+      }
+    })();
+
+    // ---- Cargar estado guardado ----
+    (function loadState(){
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        try {
+          const saved = JSON.parse(raw);
+          state = saved;
+          anioInput.value = saved.anio || 2025;
+          periodoSel.value = saved.periodo || '1';
+          renderRows();
+        } catch(e) {
+          console.warn('No se pudo cargar estado:', e);
+        }
+      } else {
+        // fila de ejemplo
+        addRow({idEst:'1001', nombre:'Juan Pérez', asignatura:'Matemáticas', n1:4.0, n2:3.5, n3:4.5, n4:0});
+      }
+    })();
+
+    // ---- Render ----
+    function renderRows(){
+      tbody.innerHTML = '';
+      state.rows.forEach((r, idx) => {
+        const tr = document.createElement('tr');
+
+        const prom = calcPromedio(r);
+
+        tr.innerHTML = `
+          <td>${idx+1}</td>
+          <td><input class="form-control form-control-sm" value="${r.idEst||''}" data-k="idEst"></td>
+          <td><input class="form-control form-control-sm" value="${r.nombre||''}" data-k="nombre"></td>
+          <td><input class="form-control form-control-sm" value="${r.asignatura||''}" data-k="asignatura"></td>
+          <td><input class="form-control form-control-sm nota" type="number" step="0.1" min="0" max="5" value="${r.n1 ?? ''}" data-k="n1"></td>
+          <td><input class="form-control form-control-sm nota" type="number" step="0.1" min="0" max="5" value="${r.n2 ?? ''}" data-k="n2"></td>
+          <td><input class="form-control form-control-sm nota" type="number" step="0.1" min="0" max="5" value="${r.n3 ?? ''}" data-k="n3"></td>
+          <td><input class="form-control form-control-sm nota" type="number" step="0.1" min="0" max="5" value="${r.n4 ?? ''}" data-k="n4"></td>
+          <td><span class="badge bg-${prom >= 3 ? 'success':'danger'}">${prom.toFixed(2)}</span></td>
+          <td><button class="btn btn-sm btn-outline-danger" data-del="${idx}">Eliminar</button></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function calcPromedio(r){
+      const n1 = clampNota(r.n1);
+      const n2 = clampNota(r.n2);
+      const n3 = clampNota(r.n3);
+      const n4 = clampNota(r.n4);
+      // Promedio simple (ajusta pesos si lo necesitas)
+      const prom = (n1 + n2 + n3 + n4) / 4;
+      r.prom = prom;
+      return prom;
+    }
+
+    function addRow(prefill = {}){
+      state.rows.push({
+        idEst: prefill.idEst || '',
+        nombre: prefill.nombre || '',
+        asignatura: prefill.asignatura || '',
+        n1: prefill.n1 ?? '',
+        n2: prefill.n2 ?? '',
+        n3: prefill.n3 ?? '',
+        n4: prefill.n4 ?? '',
+        prom: 0
+      });
+      renderRows();
+    }
+
+    function saveState(){
+      state.anio = parseInt(anioInput.value, 10) || 2025;
+      state.periodo = parseInt(periodoSel.value, 10) || 1;
+
+      // Recalcular promedios antes de guardar
+      state.rows.forEach(r => calcPromedio(r));
+
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      alert('Notas guardadas localmente (demo).');
+    }
+
+    function exportCSV(){
+      const header = ['Identificación','Estudiante','Asignatura','Nota1','Nota2','Nota3','Nota4','Promedio','Año','Período'];
+      const lines = [header.join(',')];
+
+      state.rows.forEach(r => {
+        lines.push([
+          `"${(r.idEst||'').replace(/"/g,'""')}"`,
+          `"${(r.nombre||'').replace(/"/g,'""')}"`,
+          `"${(r.asignatura||'').replace(/"/g,'""')}"`,
+          clampNota(r.n1),
+          clampNota(r.n2),
+          clampNota(r.n3),
+          clampNota(r.n4),
+          (r.prom ?? calcPromedio(r)).toFixed(2),
+          state.anio,
+          state.periodo
+        ].join(','));
+      });
+
+      const blob = new Blob([lines.join('\n')], {type:'text/csv;charset=utf-8;'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `evalix_notas_${state.anio}_p${state.periodo}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    // ---- Eventos globales ----
+    document.getElementById('addRowBtn').addEventListener('click', () => addRow());
+    document.getElementById('saveBtn').addEventListener('click', saveState);
+    document.getElementById('exportBtn').addEventListener('click', exportCSV);
+    document.getElementById('clearBtn').addEventListener('click', () => {
+      if (confirm('Esto eliminará todas las filas guardadas. ¿Continuar?')) {
+        state.rows = [];
+        localStorage.removeItem(STORAGE_KEY);
+        renderRows();
+      }
+    });
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+      localStorage.removeItem('evalix_user');
+      window.location.href = 'login.html';
+    });
+
+    // Delegación para inputs y eliminar
+    tbody.addEventListener('input', (e) => {
+      const tr = e.target.closest('tr');
+      if (!tr) return;
+      const idx = [...tbody.children].indexOf(tr);
+      const key = e.target.dataset.k;
+      if (!key) return;
+
+      if (['n1','n2','n3','n4'].includes(key)) {
+        state.rows[idx][key] = clampNota(e.target.value);
+      } else {
+        state.rows[idx][key] = e.target.value;
+      }
+      renderRows(); // re-render para refrescar promedio y badge
+    });
+
+    tbody.addEventListener('click', (e) => {
+      const del = e.target.getAttribute('data-del');
+      if (del !== null) {
+        state.rows.splice(parseInt(del,10), 1);
+        renderRows();
+      }
+    });
+
+  </script>
+  <script src="docente.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

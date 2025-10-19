@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Formulario </title>
+<link rel="stylesheet" href="Sistemas-de-notas-main/assets/css/styleReg.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css" integrity="sha512-2SwdPD6INVrV/lHTZbO2nodKhrnDdJK9/kg2XD1r9uGqPo1cUbujc+IYdlYdEErWNu69gVcYgdxlmVmzTWnetw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+<body>
+
+    <div class= "container">
+
+            <div class= "form-content">
+              <h1 id="title">Registrate</h1>
+
+              <form >
+
+                <div class="input-group">
+
+
+                    <div class="input-field" id="perfilInput">
+                        <i class="fa fa-users" aria-hidden="true"></i>
+                        <input type="text" placeholder="Perfil Usuario" required>
+                    </div>
+
+
+                    <div class="input-field" id="nameInput">
+                        <i class="fa-solid fa-user"></i>
+                        <input type="text" placeholder="Nombre Completo" required>
+                    </div>
+
+                    <div class="input-field" id="emailInput">
+                        <i class="fa-solid fa-envelope"></i>
+                        <input type="email" placeholder="Correo Electronico" required>
+                    </div>
+
+                    <div class="input-field" id="passwordInput">
+                        <i class="fa-solid fa-lock"></i>
+                        <input type="password" placeholder="Contraseña" required>
+                    </div>
+
+                    <div class="input-field" id="ConfpasswordInput">
+                        <i class="fa-solid fa-lock"></i>
+                        <input type="password" placeholder="Comfirmar Contraseña" required>
+                    </div>
+
+                     <p>¿Ya Tienes cuenta haz click<span style="font-size:1.2em;">👇</span> </p>
+                </div>
+                <div class="btn-field">
+                    <button id="signUp" type="button">Registrar</button>
+                    <button id="signIn" type="button" class="disable">Login</button></a>
+                </div>
+               </form>
+            </div>
+        </div>
+
+ 
+    <script src="registro.js"></script>
+</body>
+</html>
