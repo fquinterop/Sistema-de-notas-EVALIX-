@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -150,10 +149,12 @@
     // =========================
     //  CONFIG / API ENDPOINTS
     // =========================
-    const API_BASE = 'https://api.tu-dominio.com'; // ⬅️ ajusta tu dominio o deja relativo
+    // Si no tienes servidor disponible deja API_BASE como cadena vacía ('')
+    // En el futuro puedes poner la URL del backend (p. ej. 'https://mi-backend.com')
+    const API_BASE = ''; // <-- cambiado a vacío para evitar intentos de conexión al servidor
     const ROUTES = {
-      list: (anio, periodo) => `${API_BASE}/api/grades/${encodeURIComponent(anio)}/${encodeURIComponent(periodo)}`,
-      save: (anio, periodo) => `${API_BASE}/api/grades/${encodeURIComponent(anio)}/${encodeURIComponent(periodo)}`
+      list: (anio, periodo) => API_BASE ? `${API_BASE}/api/grades/${encodeURIComponent(anio)}/${encodeURIComponent(periodo)}` : null,
+      save: (anio, periodo) => API_BASE ? `${API_BASE}/api/grades/${encodeURIComponent(anio)}/${encodeURIComponent(periodo)}` : null
     };
 
     // ---- Catálogo ----
@@ -188,7 +189,7 @@
     })();
 
     // =========================
-    //  API HELPERS (async/await + fetch)
+    //  API HELPERS (async/await + fetch) con fallback a localStorage
     // =========================
     function getAuthHeaders() {
       try {
@@ -199,6 +200,19 @@
     }
 
     async function apiGetGrades(anio, periodo) {
+      // Si no hay API_BASE definido, devolvemos datos desde localStorage
+      if (!API_BASE) {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return { anio, periodo, nextId: 1001, autoId: true, rows: [] };
+        try {
+          return JSON.parse(raw);
+        } catch (e) {
+          console.warn('Error parseando localStorage en apiGetGrades:', e);
+          return { anio, periodo, nextId: 1001, autoId: true, rows: [] };
+        }
+      }
+
+      // Si hay backend, intentamos fetch como antes
       const url = ROUTES.list(anio, periodo);
       const res = await fetch(url, {
         headers: { 'Accept': 'application/json', ...getAuthHeaders() },
@@ -210,6 +224,18 @@
     }
 
     async function apiSaveGrades(anio, periodo, payload) {
+      // Si no hay API_BASE definido, guardamos en localStorage y devolvemos éxito
+      if (!API_BASE) {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+          return { ok: true, localOnly: true };
+        } catch (e) {
+          console.error('Error guardando en localStorage en apiSaveGrades:', e);
+          throw e;
+        }
+      }
+
+      // Si hay backend, hacemos PUT como antes
       const url = ROUTES.save(anio, periodo);
       const res = await fetch(url, {
         method: 'PUT',
@@ -227,12 +253,21 @@
     // =========================
     (async function loadState() {
       try {
-        // Intenta del servidor primero
+        // apiGetGrades gestiona fallback si API_BASE está vacío
         const server = await apiGetGrades(state.anio, state.periodo);
-        state = Object.assign({ nextId: 1001, autoId: true, rows: [] }, server);
-        showNetStatus('Datos cargados del servidor.', 'success');
+        if (server && server.rows) {
+          state = Object.assign({ nextId: 1001, autoId: true, rows: [] }, server);
+          // Si estamos trabajando localOnly (no servidor), mostrar estado acorde
+          if (!API_BASE) {
+            showNetStatus('Datos cargados desde el navegador (localStorage).', 'success');
+          } else {
+            showNetStatus('Datos cargados del servidor.', 'success');
+          }
+        } else {
+          showNetStatus('No se encontraron datos; iniciando vacío.', 'info');
+        }
       } catch (err) {
-        // Si falla, usa localStorage
+        // Si falla el fetch al servidor, usamos localStorage
         const raw = localStorage.getItem(STORAGE_KEY);
         if (raw) {
           try {
@@ -323,9 +358,20 @@
       state.autoId = !!autoIdSwitch.checked;
 
       // Guarda en local inmediatamente (cache optimista)
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      } catch (e) {
+        console.error('Error guardando en localStorage:', e);
+      }
 
-      // Intenta sincronizar con el servidor
+      // Si no hay API configurada, no intentamos sincronizar con servidor
+      if (!API_BASE) {
+        // Mensaje informativo (guardado local)
+        showNetStatus('Datos guardados correctamente en el navegador.', 'success');
+        return;
+      }
+
+      // Si hay API, intentamos sincronizar con el servidor
       try {
         const payload = { anio: state.anio, periodo: state.periodo, nextId: state.nextId, autoId: state.autoId, rows: state.rows };
         await apiSaveGrades(state.anio, state.periodo, payload);
@@ -364,7 +410,7 @@
     });
     document.getElementById('exportBtn').addEventListener('click', exportCSV);
 
-    // ✅ ÚNICO CAMBIO: LOGOUT funcional
+    // ✅ LOGOUT funcional
     document.getElementById('logoutBtn').addEventListener('click', () => {
       localStorage.removeItem('evalix_user');
       // (Opcional) si quieres limpiar las notas locales en el logout, descomenta:
