@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -43,8 +44,13 @@
     }
 
     @keyframes moverMosaico {
-      0% { background-position: 0 0; }
-      100% { background-position: 500px 500px; }
+      0% {
+        background-position: 0 0;
+      }
+
+      100% {
+        background-position: 500px 500px;
+      }
     }
 
     /* ===== Responsive tweaks ===== */
@@ -57,21 +63,49 @@
     }
 
     @media (max-width: 576px) {
-      nav.navbar { height: 64px !important; }
-      nav.navbar img[alt="Evalix"] { width: 56px !important; height: 56px !important; margin-top: -4px !important; }
-      nav.navbar .fw-bold { font-size: .95rem; }
+      nav.navbar {
+        height: 64px !important;
+      }
 
-      .container .form-label { font-size: .9rem; margin-bottom: .25rem; }
-      .container .btn { padding: .35rem .6rem; font-size: .875rem; }
-      .table-header-claro th { font-size: .85rem; }
+      nav.navbar img[alt="Evalix"] {
+        width: 56px !important;
+        height: 56px !important;
+        margin-top: -4px !important;
+      }
+
+      nav.navbar .fw-bold {
+        font-size: .95rem;
+      }
+
+      .container .form-label {
+        font-size: .9rem;
+        margin-bottom: .25rem;
+      }
+
+      .container .btn {
+        padding: .35rem .6rem;
+        font-size: .875rem;
+      }
+
+      .table-header-claro th {
+        font-size: .85rem;
+      }
+
       #gradesTable td .form-control,
-      #gradesTable td .form-select { font-size: .9rem; }
+      #gradesTable td .form-select {
+        font-size: .9rem;
+      }
     }
 
     @media (max-width: 768px) {
-      .table-header-claro th { font-size: .9rem; }
+      .table-header-claro th {
+        font-size: .9rem;
+      }
+
       #gradesTable td .form-control,
-      #gradesTable td .form-select { font-size: .95rem; }
+      #gradesTable td .form-select {
+        font-size: .95rem;
+      }
     }
   </style>
 </head>
@@ -81,10 +115,11 @@
   <nav class="navbar navbar-dark" style="background-color: #2196f3; position: relative; height: 80px;">
     <div class="container-fluid">
       <a class="navbar-brand d-flex align-items-center position-relative" href="index.html" style="z-index:2;">
-        <img src="assets/imagenes/evalix.png" alt="Evalix" style="width:75px; height:75px; object-fit: contain; margin-top:-5px;" />
+        <img src="assets/imagenes/evalix.png" alt="Evalix"
+          style="width:75px; height:75px; object-fit: contain; margin-top:-5px;" />
       </a>
       <span class="fw-bold text-white position-absolute top-50 start-50 translate-middle">
-        <strong>PANEL DOCENTES</strong>
+        <strong>PANEL ADMINISTRATIVO</strong>
       </span>
       <div class="text-end ms-auto">
         <span id="userEmail" class="text-white-50 me-3"></span>
@@ -195,7 +230,7 @@
       try {
         const u = JSON.parse(localStorage.getItem('evalix_user') || '{}');
         if (u && u.token) return { Authorization: `Bearer ${u.token}` };
-      } catch {}
+      } catch { }
       return {};
     }
 
@@ -385,9 +420,9 @@
     //  EXPORT CSV (async para futuras extensiones)
     // =========================
     async function exportCSV() {
-      const headers = ['Id Estudiante','Documento','Estudiante','Asignatura','Nota 1','Nota 2','Nota 3','Nota 4','Promedio'];
+      const headers = ['Id Estudiante', 'Documento', 'Estudiante', 'Asignatura', 'Nota 1', 'Nota 2', 'Nota 3', 'Nota 4', 'Promedio'];
       const rows = state.rows.map(r => [r.idEst, r.documento, r.nombre, r.asignatura, r.n1 ?? '', r.n2 ?? '', r.n3 ?? '', r.n4 ?? '', (r.prom ?? 0).toFixed(2)]);
-      const csv = [headers.join(','), ...rows.map(cols => cols.map(v => typeof v === 'string' && v.includes(',') ? `"${v.replaceAll('"','""')}"` : v).join(','))].join('\n');
+      const csv = [headers.join(','), ...rows.map(cols => cols.map(v => typeof v === 'string' && v.includes(',') ? `"${v.replaceAll('"', '""')}"` : v).join(','))].join('\n');
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -437,7 +472,7 @@
       const idx = [...tbody.children].indexOf(tr);
       const key = input.getAttribute('data-k');
       let val = input.value;
-      if (['n1','n2','n3','n4'].includes(key)) { val = clampNota(val); input.value = val; }
+      if (['n1', 'n2', 'n3', 'n4'].includes(key)) { val = clampNota(val); input.value = val; }
       state.rows[idx][key] = val;
       renderRows(); // repinta para actualizar promedio
     });

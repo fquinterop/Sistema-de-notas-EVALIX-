@@ -210,12 +210,14 @@ document.addEventListener("DOMContentLoaded", async () => {
   const selectTipo = document.getElementById("tipoCliente");
   const form = document.getElementById("loginForm");
 
+  // Array con los tipos de cliente
   const tiposCliente = [
-    { id: 1, valor: "institucion", nombre: "Institución Educativa" },
+    { id: 1, valor: "administrativo", nombre: "Administrativo" },
     { id: 2, valor: "profesor", nombre: "Profesor" },
     { id: 3, valor: "alumno", nombre: "Alumno" }
   ];
 
+  // Simulamos fetch asíncrono
   const fetchTipos = async () => {
     return new Promise(resolve => setTimeout(() => resolve(tiposCliente), 300));
   };
@@ -228,6 +230,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     console.error("Error al cargar tipos:", err);
   }
 
+  // Manejo del envío del formulario
   form.addEventListener("submit", e => {
     e.preventDefault();
     if (!form.checkValidity()) {
@@ -241,9 +244,16 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     localStorage.setItem("evalix_user", JSON.stringify(userData));
 
-    if (role === "profesor") window.location.href = "docentes.html";
-    else if (role === "alumno") window.location.href = "pagina_cliente.html";
-    else window.location.href = "index.html";
+    // Redirección según el tipo de usuario
+    if (role === "profesor") {
+      window.location.href = "docente.html";
+    } else if (role === "alumno") {
+      window.location.href = "estudiante.html";
+    } else if (role === "administrativo") {
+      window.location.href = "admin.html";
+    } else {
+      alert("Selecciona un tipo de usuario válido.");
+    }
   });
 });
 </script>
