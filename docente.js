@@ -234,7 +234,7 @@ document.getElementById("clearBtn").addEventListener("click", async () => {
 })();
 
 document.getElementById("logoutBtn").addEventListener("click", () => {
-  const confirmar = confirm("¿Seguro que deseas cerrar sesión?");
+  const confirmar = confirm("¿Seguro que deseas cerrar sesión.?");
   
   if (confirmar) {
     window.location.href = "index.html";

@@ -33,7 +33,7 @@
  */
 
 // =========================
-// CONFIG
+
 // =========================
 // ⬅️ Reemplaza por el BASE URL que te da MockAPI (¡sin barra final!)
 const MOCKAPI_BASE = "https://68fe58f87c700772bb13879c.mockapi.io/Sheets";

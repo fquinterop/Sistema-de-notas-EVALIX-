@@ -2,7 +2,7 @@
 
 Elaborado por:
 * Yuly Marcela Sepulveda Sepulveda
-* Mariana Rivera Perez
+* Mariana Rivera Perez.
 * Felipe Quintero Pulgarín
 
 
